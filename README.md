@@ -1,15 +1,1 @@
-# build-ai-powered-apps
-
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Folder containing [Build AI-powered apps](https://codewithmosh.com/p/build-ai-powered-apps) learning course materials from the lecturer Mosh Hamedani [Code With Mosh](https://members.codewithmosh.com/courses)
