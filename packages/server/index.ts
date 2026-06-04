@@ -1,8 +1,7 @@
-import express from 'express';
-import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import z from 'zod';
-import { chatService } from './service/chat.service';
+import type { Request, Response } from 'express';
+import express from 'express';
+import { chatController } from './controller/chat.controller';
 
 dotenv.config();
 
@@ -28,33 +27,7 @@ app.get('/api/hello', (req: Request, res: Response) => {
     res.json({ message: 'Hello world !' });
 });
 
-// In order to reduce wasting of tokens and failures we should validate min/max input length
-const chatSchema = z.object({
-    prompt: z
-        .string()
-        .trim()
-        .min(1, 'Prompt is required.')
-        .max(1000, 'Prompt is too long (max 1000 characters).'),
-    conversationId: z.uuid(),
-});
-
-app.post('/api/chat', async (req: Request, res: Response) => {
-    const parseResult = chatSchema.safeParse(req.body);
-    if (!parseResult.success) {
-        res.status(400).json(z.prettifyError(parseResult.error));
-        return;
-    }
-
-    try {
-        const { prompt, conversationId } = req.body;
-
-        const response = await chatService.sendMessage(prompt, conversationId);
-
-        res.json({ message: response.message });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to generate a response.' });
-    }
-});
+app.post('/api/chat', chatController.sendMessage);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
