@@ -31,6 +31,8 @@ app.get('/api/hello', (req: Request, res: Response) => {
     res.json({ message: 'Hello world !' });
 });
 
+let lastResponseId: string | null = null; // establishes the conversation history
+
 app.post('/api/chat', async (req: Request, res: Response) => {
     const { prompt } = req.body;
 
@@ -39,7 +41,10 @@ app.post('/api/chat', async (req: Request, res: Response) => {
         input: prompt,
         temperature: 0.2,
         max_output_tokens: 100,
+        previous_response_id: lastResponseId,
     });
+
+    lastResponseId = response.id;
 
     res.json({ message: response.output_text });
 });
