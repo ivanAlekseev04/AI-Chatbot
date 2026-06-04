@@ -32,6 +32,7 @@ app.get('/api/hello', (req: Request, res: Response) => {
     res.json({ message: 'Hello world !' });
 });
 
+// FIXME: extract this to the database and retrieve it from the table
 const conversations: Map<string, string> = new Map<string, string>(); // conversationId -> lastResponseId
 // Every time the conversation is started lets say in ChatGPT, then conversion id in form of GUID is send from the client to the server
 
@@ -48,23 +49,27 @@ const chatSchema = z.object({
 app.post('/api/chat', async (req: Request, res: Response) => {
     const parseResult = chatSchema.safeParse(req.body);
     if (!parseResult.success) {
-        res.status(400).json(parseResult.error.format());
+        res.status(400).json(z.prettifyError(parseResult.error));
         return;
     }
 
-    const { prompt, conversationId } = req.body;
+    try {
+        const { prompt, conversationId } = req.body;
 
-    const response = await client.responses.create({
-        model: 'gpt-5.4-mini',
-        input: prompt,
-        temperature: 0.2,
-        max_output_tokens: 100,
-        previous_response_id: conversations.get(conversationId),
-    });
+        const response = await client.responses.create({
+            model: 'gpt-5.4-mini',
+            input: prompt,
+            temperature: 0.2,
+            max_output_tokens: 200,
+            previous_response_id: conversations.get(conversationId),
+        });
 
-    conversations.set(conversationId, response.id);
+        conversations.set(conversationId, response.id);
 
-    res.json({ message: response.output_text });
+        res.json({ message: response.output_text });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate a response.' });
+    }
 });
 
 app.listen(port, () => {
