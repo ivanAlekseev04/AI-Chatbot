@@ -31,20 +31,21 @@ app.get('/api/hello', (req: Request, res: Response) => {
     res.json({ message: 'Hello world !' });
 });
 
-let lastResponseId: string | null = null; // establishes the conversation history
+const conversations: Map<string, string> = new Map<string, string>(); // conversationId -> lastResponseId
+// Every time the conversation is started lets say in ChatGPT, then conversion id in form of GUID is send from the client to the server
 
 app.post('/api/chat', async (req: Request, res: Response) => {
-    const { prompt } = req.body;
+    const { prompt, conversationId } = req.body;
 
     const response = await client.responses.create({
         model: 'gpt-5.4-mini',
         input: prompt,
         temperature: 0.2,
         max_output_tokens: 100,
-        previous_response_id: lastResponseId,
+        previous_response_id: conversations.get(conversationId),
     });
 
-    lastResponseId = response.id;
+    conversations.set(conversationId, response.id);
 
     res.json({ message: response.output_text });
 });
