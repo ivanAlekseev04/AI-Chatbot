@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
-import type { Request, Response } from 'express';
 import express from 'express';
-import { chatController } from './controller/chat.controller';
+import router from './routes';
 
 dotenv.config();
 
@@ -17,17 +16,8 @@ app.use(express.json());
 // Without it the retrieving of the request body won't give a JSON object, but will give "undefined" instead
 // The reason for that is that HTTP transfers the request body as a raw sequence of bytes
 
+app.use(router);
 const port = process.env.PORT || 3000;
-
-app.get('/', (req: Request, res: Response) => {
-    res.send('Hello world !');
-});
-
-app.get('/api/hello', (req: Request, res: Response) => {
-    res.json({ message: 'Hello world !' });
-});
-
-app.post('/api/chat', chatController.sendMessage);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
