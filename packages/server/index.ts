@@ -1,14 +1,10 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
 import z from 'zod';
+import { chatService } from './service/chat.service';
 
 dotenv.config();
-
-const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 const app = express();
 
@@ -32,10 +28,6 @@ app.get('/api/hello', (req: Request, res: Response) => {
     res.json({ message: 'Hello world !' });
 });
 
-// FIXME: extract this to the database and retrieve it from the table
-const conversations: Map<string, string> = new Map<string, string>(); // conversationId -> lastResponseId
-// Every time the conversation is started lets say in ChatGPT, then conversion id in form of GUID is send from the client to the server
-
 // In order to reduce wasting of tokens and failures we should validate min/max input length
 const chatSchema = z.object({
     prompt: z
@@ -56,17 +48,9 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     try {
         const { prompt, conversationId } = req.body;
 
-        const response = await client.responses.create({
-            model: 'gpt-5.4-mini',
-            input: prompt,
-            temperature: 0.2,
-            max_output_tokens: 200,
-            previous_response_id: conversations.get(conversationId),
-        });
+        const response = await chatService.sendMessage(prompt, conversationId);
 
-        conversations.set(conversationId, response.id);
-
-        res.json({ message: response.output_text });
+        res.json({ message: response.message });
     } catch (error) {
         res.status(500).json({ error: 'Failed to generate a response.' });
     }
