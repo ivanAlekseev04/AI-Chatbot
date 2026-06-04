@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "build-ai-powered-apps",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/bun": "latest",

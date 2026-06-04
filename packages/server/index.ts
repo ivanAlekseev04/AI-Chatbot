@@ -2,6 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import z from 'zod';
 
 dotenv.config();
 
@@ -34,7 +35,23 @@ app.get('/api/hello', (req: Request, res: Response) => {
 const conversations: Map<string, string> = new Map<string, string>(); // conversationId -> lastResponseId
 // Every time the conversation is started lets say in ChatGPT, then conversion id in form of GUID is send from the client to the server
 
+// In order to reduce wasting of tokens and failures we should validate min/max input length
+const chatSchema = z.object({
+    prompt: z
+        .string()
+        .trim()
+        .min(1, 'Prompt is required.')
+        .max(1000, 'Prompt is too long (max 1000 characters).'),
+    conversationId: z.uuid(),
+});
+
 app.post('/api/chat', async (req: Request, res: Response) => {
+    const parseResult = chatSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        res.status(400).json(parseResult.error.format());
+        return;
+    }
+
     const { prompt, conversationId } = req.body;
 
     const response = await client.responses.create({
