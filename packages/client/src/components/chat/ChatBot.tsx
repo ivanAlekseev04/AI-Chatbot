@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { useCallback, useRef, useState } from 'react';
 
-import { TypingIndicator } from './TypingIndicator';
+import ChatInput, { type ChatFormData } from './ChatInput';
 import type { Message } from './ChatMessages';
 import ChatMessages from './ChatMessages';
-import ChatInput, { type ChatFormData } from './ChatInput';
+import { TypingIndicator } from './TypingIndicator';
 
 type ChatResponse = {
     message: string;
