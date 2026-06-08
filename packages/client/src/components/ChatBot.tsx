@@ -21,13 +21,13 @@ type Message = {
 const ChatBot = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isBotTyping, setIsBotTyping] = useState(false);
-    const formRef = useRef<HTMLFormElement | null>(null);
+    const lastMessageRef = useRef<HTMLDivElement | null>(null);
     const conversationId = useRef(crypto.randomUUID());
     const { register, handleSubmit, reset, formState } = useForm<FormData>();
 
     // Whenever "messages[]" is changing, this hook is called and scrolls the form into view (scrolls to the bottom of the chat)
     useEffect(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth' });
+        lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     const onSubmit = useCallback(
@@ -37,7 +37,7 @@ const ChatBot = () => {
             setMessages((prev) => [...prev, { content: prompt, role: 'user' }]);
             setIsBotTyping(true);
 
-            reset();
+            reset({ prompt: '' }); // Providing the default value for the "prompt" field when resetting the form
 
             const currentConversationId = conversationId.current;
 
@@ -83,16 +83,21 @@ const ChatBot = () => {
     };
 
     return (
-        <div>
-            <div className="flex flex-col gap-3 mb-10">
+        <div className="flex flex-col h-full w-full">
+            <div className="flex flex-col flex-1 gap-3 mb-10 overflow-y-auto">
                 {messages.map((message, index) => (
-                    <p
+                    <div
                         key={index}
                         onCopy={onCopyMessage}
+                        ref={
+                            index === messages.length - 1
+                                ? lastMessageRef
+                                : null
+                        }
                         className={`px-3 py-1 rounded-xl ${message.role === 'user' ? 'bg-blue-600 text-white self-end' : 'bg-gray-100 text-black self-start'}`}
                     >
                         <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </p>
+                    </div>
                 ))}
                 {isBotTyping && (
                     <div className="flex gap-1 px-3 py-3 bg-gray-200 rounded-xl self-start">
@@ -105,7 +110,6 @@ const ChatBot = () => {
             <form
                 onSubmit={onFormSubmit} // function "onSubmit" reference, not the function call
                 onKeyDown={onKeyDown}
-                ref={formRef}
                 className="flex flex-col gap-2 items-end border-2 p-4 rounded-3xl"
             >
                 <textarea
@@ -114,6 +118,7 @@ const ChatBot = () => {
                         validate: (data) =>
                             data.trim().length > 0 || 'Prompt cannot be empty',
                     })}
+                    autoFocus
                     className="w-full border-0 focus:outline-0 resize-none"
                     placeholder="Ask anything"
                     maxLength={1000}
