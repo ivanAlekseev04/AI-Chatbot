@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useForm } from 'react-hook-form';
 import { FaArrowCircleUp } from 'react-icons/fa';
@@ -21,8 +21,14 @@ type Message = {
 const ChatBot = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isBotTyping, setIsBotTyping] = useState(false);
+    const formRef = useRef<HTMLFormElement | null>(null);
     const conversationId = useRef(crypto.randomUUID());
     const { register, handleSubmit, reset, formState } = useForm<FormData>();
+
+    // Whenever "messages[]" is changing, this hook is called and scrolls the form into view (scrolls to the bottom of the chat)
+    useEffect(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const onSubmit = useCallback(
         async ({ prompt }: FormData) => {
@@ -90,6 +96,7 @@ const ChatBot = () => {
             <form
                 onSubmit={onFormSubmit} // function "onSubmit" reference, not the function call
                 onKeyDown={onKeyDown}
+                ref={formRef}
                 className="flex flex-col gap-2 items-end border-2 p-4 rounded-3xl"
             >
                 <textarea
