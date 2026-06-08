@@ -2,27 +2,47 @@ import { Button } from './ui/button';
 import { FaArrowCircleUp } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 type FormData = {
     prompt: string;
 };
 
+type ChatResponse = {
+    message: string;
+};
+
+type Message = {
+    content: string;
+    role: 'user' | 'bot';
+};
+
 const ChatBot = () => {
+    const [messages, setMessages] = useState<Message[]>([]);
     const conversationId = useRef(crypto.randomUUID());
     const { register, handleSubmit, reset, formState } = useForm<FormData>();
 
     const onSubmit = useCallback(
         async ({ prompt }: FormData) => {
+            // ✅ Always the latest state
+            // If it was "[...prev, prompt]" -> ❌ Potentially stale value
+            setMessages((prev) => [...prev, { content: prompt, role: 'user' }]);
+
             reset();
 
             const currentConversationId = conversationId.current;
 
-            const { data } = await axios.post('/api/chat', {
+            const { data } = await axios.post<ChatResponse>('/api/chat', {
                 prompt,
                 conversationId: currentConversationId,
             });
 
+            // ✅ Always the latest state
+            // If it was "[...prev, data.message]" -> ❌ Potentially stale value
+            setMessages((prev) => [
+                ...prev,
+                { content: data.message, role: 'bot' },
+            ]);
             console.log('Request from server:', prompt);
             console.log('Response from server:', data);
         },
@@ -47,30 +67,42 @@ const ChatBot = () => {
     );
 
     return (
-        <form
-            onSubmit={onFormSubmit} // function "onSubmit" reference, not the function call
-            onKeyDown={onKeyDown}
-            className="flex flex-col gap-2 items-end border-2 p-4 rounded-3xl"
-        >
-            <textarea
-                {...register('prompt', {
-                    required: true,
-                    validate: (data) =>
-                        data.trim().length > 0 || 'Prompt cannot be empty',
-                })}
-                className="w-full border-0 focus:outline-0 resize-none"
-                placeholder="Ask anything"
-                maxLength={1000}
-            />
-            <Button
-                disabled={!formState.isValid}
-                type="submit"
-                className="rounded-full w-9 h-9"
+        <div>
+            <div className="flex flex-col gap-3 mb-10">
+                {messages.map((message, index) => (
+                    <p
+                        key={index}
+                        className={`px-3 py-1 rounded-xl ${message.role === 'user' ? 'bg-blue-600 text-white self-end' : 'bg-gray-100 text-black self-start'}`}
+                    >
+                        {message.content}
+                    </p>
+                ))}
+            </div>
+            <form
+                onSubmit={onFormSubmit} // function "onSubmit" reference, not the function call
+                onKeyDown={onKeyDown}
+                className="flex flex-col gap-2 items-end border-2 p-4 rounded-3xl"
             >
-                {/* We are giving fixed length/width to the Button since only the square can be made a perfect circle */}
-                <FaArrowCircleUp />
-            </Button>
-        </form>
+                <textarea
+                    {...register('prompt', {
+                        required: true,
+                        validate: (data) =>
+                            data.trim().length > 0 || 'Prompt cannot be empty',
+                    })}
+                    className="w-full border-0 focus:outline-0 resize-none"
+                    placeholder="Ask anything"
+                    maxLength={1000}
+                />
+                <Button
+                    disabled={!formState.isValid}
+                    type="submit"
+                    className="rounded-full w-9 h-9"
+                >
+                    {/* We are giving fixed length/width to the Button since only the square can be made a perfect circle */}
+                    <FaArrowCircleUp />
+                </Button>
+            </form>
+        </div>
     );
 };
 
