@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
+
+import CodeBlock from './Codeblock';
 
 type Props = {
     messages: Message[];
@@ -8,6 +10,34 @@ type Props = {
 export type Message = {
     content: string;
     role: 'user' | 'bot';
+};
+
+// "When you parse this markdown, don't emit plain <code> and <pre> tags — call my functions for those instead."
+// react-markdown still does all the parsing work (figuring out what's a code block, what's a heading, what's bold);
+// it just hands the rendering of <code> and <pre> to you. Any tag you don't list keeps its default rendering
+const markdownComponents: Components = {
+    code({ className, children }) {
+        const text = String(children);
+
+        // Fenced blocks carry a `language-xxx` class; multi-line code without a
+        // language is still a block. Everything else is inline `code`.
+        const isBlock =
+            className?.startsWith('language-') || text.includes('\n');
+
+        if (!isBlock) {
+            return (
+                <code className="px-1.5 py-0.5 rounded bg-gray-200 text-pink-600 text-[0.9em] font-mono">
+                    {children}
+                </code>
+            );
+        }
+
+        const language = className?.replace('language-', '') ?? '';
+        return <CodeBlock language={language} value={text.trimEnd()} />;
+    },
+    // CodeBlock provides its own container, so collapse the default <pre>
+    // wrapper to avoid nesting blocks.
+    pre: ({ children }) => <>{children}</>,
 };
 
 const ChatMessages = ({ messages }: Props) => {
@@ -33,9 +63,11 @@ const ChatMessages = ({ messages }: Props) => {
                     key={index}
                     onCopy={onCopyMessage}
                     ref={index === messages.length - 1 ? lastMessageRef : null}
-                    className={`px-3 py-1 rounded-xl ${message.role === 'user' ? 'bg-blue-600 text-white self-end' : 'bg-gray-100 text-black self-start'}`}
+                    className={`px-3 py-1 rounded-xl max-w-[80%] ${message.role === 'user' ? 'bg-blue-600 text-white self-end' : 'bg-gray-100 text-black self-start'}`}
                 >
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                    <ReactMarkdown components={markdownComponents}>
+                        {message.content}
+                    </ReactMarkdown>
                 </div>
             ))}
         </div>
