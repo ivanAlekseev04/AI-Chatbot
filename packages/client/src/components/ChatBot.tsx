@@ -21,6 +21,7 @@ type Message = {
 const ChatBot = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isBotTyping, setIsBotTyping] = useState(false);
+    const [error, setError] = useState('');
     const lastMessageRef = useRef<HTMLDivElement | null>(null);
     const conversationId = useRef(crypto.randomUUID());
     const { register, handleSubmit, reset, formState } = useForm<FormData>();
@@ -32,27 +33,37 @@ const ChatBot = () => {
 
     const onSubmit = useCallback(
         async ({ prompt }: FormData) => {
-            // ✅ Always the latest state
-            // If it was "[...prev, prompt]" -> ❌ Potentially stale value
-            setMessages((prev) => [...prev, { content: prompt, role: 'user' }]);
-            setIsBotTyping(true);
+            try {
+                // ✅ Always the latest state
+                // If it was "[...prev, prompt]" -> ❌ Potentially stale value
+                setMessages((prev) => [
+                    ...prev,
+                    { content: prompt, role: 'user' },
+                ]);
+                setIsBotTyping(true);
+                setError('');
 
-            reset({ prompt: '' }); // Providing the default value for the "prompt" field when resetting the form
+                reset({ prompt: '' }); // Providing the default value for the "prompt" field when resetting the form
 
-            const currentConversationId = conversationId.current;
+                const currentConversationId = conversationId.current;
 
-            const { data } = await axios.post<ChatResponse>('/api/chat', {
-                prompt,
-                conversationId: currentConversationId,
-            });
+                const { data } = await axios.post<ChatResponse>('/api/chat', {
+                    prompt,
+                    conversationId: currentConversationId,
+                });
 
-            // ✅ Always the latest state
-            // If it was "[...prev, data.message]" -> ❌ Potentially stale value
-            setMessages((prev) => [
-                ...prev,
-                { content: data.message, role: 'bot' },
-            ]);
-            setIsBotTyping(false);
+                // ✅ Always the latest state
+                // If it was "[...prev, data.message]" -> ❌ Potentially stale value
+                setMessages((prev) => [
+                    ...prev,
+                    { content: data.message, role: 'bot' },
+                ]);
+            } catch (err) {
+                console.error(err);
+                setError('Something went wrong, try again!');
+            } finally {
+                setIsBotTyping(false);
+            }
         },
         [reset]
     );
@@ -106,6 +117,7 @@ const ChatBot = () => {
                         <div className="w-2 h-2 rounded-full bg-gray-800 animate-pulse [animation-delay:0.4s]"></div>
                     </div>
                 )}
+                {error && <p className="text-red-500">{error}</p>}
             </div>
             <form
                 onSubmit={onFormSubmit} // function "onSubmit" reference, not the function call
