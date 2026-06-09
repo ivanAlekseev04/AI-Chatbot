@@ -1,1 +1,2 @@
-## Folder containing [Build AI-powered apps](https://codewithmosh.com/p/build-ai-powered-apps) learning course materials from the lecturer Mosh Hamedani [Code With Mosh](https://members.codewithmosh.com/courses)
+## AI-powered chatbot project from the [Build AI-powered apps](https://codewithmosh.com/p/build-ai-powered-apps) learning course 
+### Lecturer: Mosh Hamedani [Code With Mosh](https://members.codewithmosh.com/courses)
