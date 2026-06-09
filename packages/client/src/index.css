@@ -4,6 +4,13 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/figtree';
 
+/* We are doing this override here instead of tailwind.config.js since Tailwind v4 dropped support the config file. */
+/* These overrides ensure code blocks are displayed correctly without extra quotation marks to avoid clash with ReactMarkdown parsing. */
+.prose code::before,
+.prose code::after {
+    content: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
