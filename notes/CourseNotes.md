@@ -1,10 +1,15 @@
-# Course Notes — Building AI-Powered Apps with React, Bun & Express
+# AI-powered Chatbot: Project Tech Stack & Study Notes
+A reference guide to the technologies used in this project, plus a set of concepts worth researching as a junior developer. Each comparison includes a short example.
 
 ---
 
 ## Technologies
 
-### Bun — The All-in-One Node.js Replacement
+The stack is split by responsibility — backend, frontend, tooling, and supporting libraries. Below is what each piece does and why it's in the project.
+ 
+### Backend
+
+- Bun — The All-in-One `Node.js` Replacement
 
 If you are coming from Java, think of Bun as a single tool that replaces multiple things at once — similar to how Maven handles both dependency management and building in the Java world. Bun acts as a **runtime** (like the JVM), a **package manager** (like Maven/Gradle), and a **bundler** all in one.
 
@@ -17,11 +22,234 @@ If you are coming from Java, think of Bun as a single tool that replaces multipl
 | `bun install` | Installs all dependencies listed in `package.json` into `node_modules` |
 | `bun add <package>` | Adds a specific dependency to the project |
 | `bun create react my-app` | Scaffolds a new React project |
-| `bun create vite my-app` | Scaffolds a new Vite project |
+| `bun create vite my-app` | Scaffolds a new Vite project | 
+
+- **Express** — the web framework that defines API routes and handles HTTP requests/responses.
+### Frontend
+ 
+- **Vite** — the build tool and dev server. Provides fast hot-reloading during development.
+- **React** — the UI library for building components.
+### UI Frameworks
+ 
+- **ShadCN** — a collection of accessible, copy-paste React components built on top of Tailwind.
+- **Tailwind CSS** — a utility-first CSS framework for styling directly in your markup.
+
+### Pre-Commit Tools
+ 
+These run automatically before code is committed, keeping the codebase clean and consistent.
+
+#### Husky
+* Lets you **automate code execution at Git hook points** — similar to pre-commit or pre-push lifecycle hooks.
+* Use cases:
+    - Automatically run Prettier before a commit (so you never forget to format)
+    - Run your test suite before code is pushed to the remote repository
+
+```bash
+bun add -d husky
+```
+
+#### Lint-staged
+* Works hand-in-hand with Husky. While Husky triggers the automation, `lint-staged` makes sure tasks only run on **files that are staged for commit** — not the entire codebase.
+* This keeps things fast: no need to lint 500 files when you only changed 2.
+
+```bash
+bun add -d lint-staged
+``` 
+
+### Supporting Libraries
+ 
+| Library | Purpose |
+|---|---|
+| **dotenv** | Loads environment variables from a `.env` file into your app |
+| **Prettier** | Auto-formats code (spacing, semicolons, quotes) for consistency |
+| **Zod** | Data validation library, widely used in React apps to validate forms and API data |
+| **React Hook Form** | Manages form state and validation efficiently |
+| **React Icons** | Provides thousands of ready-to-use icons from popular icon sets |
+| **Axios** | HTTP client for making API requests from the frontend |
+| **react-markdown** | Renders markdown content as React components |
+| **Sentry** | Error logging/monitoring — *not used here, but good practice in production* |
+| **eslint-plugin-simple-import-sort** | Automatically sorts import statements |
+| **eslint-plugin-unused-imports** | Detects and removes unused imports |
+| **@tailwindcss/typography** | Adds the `prose` class for nicely styled rendered HTML/markdown |
+ 
+---
+
+## Concepts to Research
+ 
+A study list of concepts worth understanding deeply. Comparisons include examples so the distinction is concrete.
+ 
+### 1. `export default` vs. `export`
+ 
+A module can have **one** default export but **many** named exports. The difference shows up in how you import them.
+ 
+```typescript
+// utils.ts
+ 
+// Named export (can have many)
+export function add(a: number, b: number) {
+  return a + b;
+}
+ 
+// Default export (only one per file)
+export default function multiply(a: number, b: number) {
+  return a * b;
+}
+```
+ 
+```typescript
+// Importing them
+ 
+// Default import — you choose any name, no curly braces
+import multiply from './utils';
+ 
+// Named import — name must match exactly, uses curly braces
+import { add } from './utils';
+```
+ 
+> **Rule of thumb:** use a default export when a file exports one main thing (like a React component). Use named exports for utility files with multiple helpers.
+ 
+---
+ 
+### 2. `useCallback` React Hook
+ 
+`useCallback` memoizes a **function** so it isn't re-created on every render. This is useful when passing callbacks to child components that rely on reference equality to avoid unnecessary re-renders.
+ 
+```tsx
+import { useCallback, useState } from 'react';
+ 
+function Parent() {
+  const [count, setCount] = useState(0);
+ 
+  // Without useCallback, this function is re-created on every render.
+  // With it, the same function reference is reused unless dependencies change.
+  const handleClick = useCallback(() => {
+    setCount((prev) => prev + 1);
+  }, []); // empty deps = function never changes
+ 
+  return <Child onClick={handleClick} />;
+}
+```
+ 
+---
+ 
+### 3. `useRef` React Hook
+ 
+`useRef` gives you a **mutable container** whose value persists across renders **without** causing a re-render when it changes. Two common uses: accessing DOM elements, and storing a value you want to "remember" between renders.
+ 
+```tsx
+import { useRef } from 'react';
+ 
+function TextInput() {
+  const inputRef = useRef<HTMLInputElement>(null);
+ 
+  const focusInput = () => {
+    inputRef.current?.focus(); // directly access the DOM node
+  };
+ 
+  return (
+    <>
+      <input ref={inputRef} />
+      <button onClick={focusInput}>Focus</button>
+    </>
+  );
+}
+```
+ 
+---
+ 
+### 4. State Hooks vs. Ref Hooks
+ 
+This is the key mental model behind `useState` and `useRef`.
+ 
+| | `useState` | `useRef` |
+|---|---|---|
+| Triggers re-render on change? | ✅ Yes | ❌ No |
+| Value persists across renders? | ✅ Yes | ✅ Yes |
+| Typical use | Data shown in the UI | DOM access, or values that shouldn't trigger a render |
+| Access syntax | `value`, `setValue()` | `ref.current` |
+ 
+```tsx
+// useState — changing it re-renders the component (the count updates on screen)
+const [count, setCount] = useState(0);
+ 
+// useRef — changing it does NOT re-render (good for tracking without UI updates)
+const renderCount = useRef(0);
+renderCount.current += 1; // silently tracks renders, no UI update
+```
+ 
+> **Rule of thumb:** if the value should appear on screen and update the UI when it changes, use `useState`. If it's "behind the scenes" data or a DOM reference, use `useRef`.
+ 
+---
+ 
+### 5. React Icons
+ 
+A library that bundles icons from many popular sets (FontAwesome, Material, Bootstrap, etc.) as React components. The official site (`react-icons.github.io/react-icons`) is great for browsing and searching for the right icon.
+ 
+```tsx
+import { FaArrowCircleUp } from 'react-icons/fa';
+ 
+function ScrollButton() {
+  return <FaArrowCircleUp size={24} color="white" />;
+}
+```
+ 
+---
+ 
+### 6. `items-start` vs. `self-start` (Tailwind Flexbox)
+ 
+Both control alignment along the cross axis, but they apply to **different elements**.
+ 
+- **`items-start`** — set on the **parent (flex container)**. Aligns **all** children to the start of the cross axis.
+- **`self-start`** — set on a **single child**. Overrides the parent's alignment for just that one item.
+```tsx
+{/* Parent aligns ALL children to the start */}
+<div className="flex items-start">
+  <div>Item A</div>
+  <div>Item B</div>
+</div>
+ 
+{/* Only this ONE child aligns itself to the start */}
+<div className="flex items-center">
+  <div>Centered</div>
+  <div className="self-start">I align myself differently</div>
+</div>
+```
+ 
+> In a chat app, `self-start` and `self-end` are handy for placing assistant messages on the left and user messages on the right within the same container.
+ 
+---
+ 
+### 7. Don't Hard-Code Height and Width
+ 
+Sizing should be **flexible** and controlled from the **outside** (by the parent), not baked into a low-level component.
+ 
+The recommended pattern: put a fixed dimension like `h-screen` on the **highest-level component** (e.g. `App.tsx`), then let inner components use relative values like `h-full` to fill the space they're given.
+ 
+```tsx
+// ❌ Bad — fixed height baked into a reusable component
+function ChatBox() {
+  return <div className="h-[600px]">...</div>;
+}
+ 
+// ✅ Good — top level sets the boundary
+function App() {
+  return (
+    <div className="h-screen">
+      <ChatBox /> {/* ChatBox uses h-full internally */}
+    </div>
+  );
+}
+ 
+function ChatBox() {
+  return <div className="h-full">...</div>; // fills whatever the parent gives it
+}
+```
+ 
+> **Principle:** a component's height and width should be controlled by its parent, not hard-coded inside itself. This keeps components reusable in different layouts.
 
 ---
 
-### Regular Dependencies vs. `devDependencies`
+### 8. Regular Dependencies vs devDependencies
 
 This is similar to the difference between **compile-scope** and **test-scope** dependencies in Maven.
 
@@ -43,34 +271,6 @@ The answer is **version consistency**. Listing it in `devDependencies` ensures:
 # Installing a dev dependency with Bun
 bun add -d prettier
 ```
-
----
-
-### Husky
-
-Husky lets you **automate code execution at Git hook points** — similar to pre-commit or pre-push lifecycle hooks.
-
-Use cases:
-- Automatically run Prettier before a commit (so you never forget to format)
-- Run your test suite before code is pushed to the remote repository
-
-```bash
-bun add -d husky
-```
-
----
-
-### Lint-staged
-
-Works hand-in-hand with Husky. While Husky triggers the automation, `lint-staged` makes sure tasks only run on **files that are staged for commit** — not the entire codebase.
-
-This keeps things fast: no need to lint 500 files when you only changed 2.
-
-```bash
-bun add -d lint-staged
-```
-
----
 
 ## Prompt Engineering
 
